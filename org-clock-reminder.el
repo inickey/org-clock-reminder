@@ -99,6 +99,7 @@
   (when (or (org-clocking-p) org-clock-reminder-remind-inactivity)
     (funcall org-clock-reminder-method (funcall org-clock-reminder-format))))
 
+;;;###autoload
 (defun org-clock-reminder-activate ()
   "Activate notification timer.  If you change `org-clock-reminder-interval value after activating, you should restart it."
   (interactive)
