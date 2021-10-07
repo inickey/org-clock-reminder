@@ -75,8 +75,8 @@ You can turn on inactivity reminds, which are will be send when there's no curre
 You can also change notification title string and body format string.
 
 ```emacs-lisp
-(setq org-clock-reminder-notification-title "Productivity notification")
-(setq org-clock-reminder-format-string "You working for %s on<br/>%s")
+(setq org-clock-reminder-notification-title "Productivity notification"
+      org-clock-reminder-format-string "You working for %s on<br/>%s")
 ```
 
 If you have turned on inactivity notifications, you can also set inactivity notification text.
@@ -96,6 +96,25 @@ If there's not enought customizations for your task, you can set `org-clock-remi
                                     "No task selected")))
 ```
 
+You can set icons for clocking and inactivity states with the following parameters.
+
+```emacs-lisp
+(setq org-clock-reminder-clocking-icon "~/img/clocking.png"
+      org-clock-reminder-inactivity-icon "~/img/inactivity.png")
+```
+
+Or if you don't want to see the icons on notifications, you can turn them off.
+
+```emacs-lisp
+(setq org-clock-reminder-show-icons nil)
+```
+
 ## Contributions
 
 Feel free to send pull requests, feature requests, bug reports or fixes. Also I'd like to keep this package as simple as it can be.
+
+## Icons
+
+I am not designer or picture artist at all, so provided icons are found on the Internet. If you have a better idea for mnemonic icons to use, or you have your own icons, please let me know.
+
+Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>

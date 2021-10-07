@@ -28,7 +28,7 @@
 ;;; Commentary:
 ;;
 ;; In programming, you often have to switch between nested tasks,
-;; which makes it quite easy to miss the original goal. This package
+;; which makes it quite easy to miss the original goal.  This package
 ;; is designed to remind you of the current task, or its absence at
 ;; specified intervals.
 ;;
@@ -78,6 +78,25 @@
   :type 'string
   :group 'org-clock-reminder)
 
+(defcustom org-clock-reminder-show-icons t
+  "If value is nil, icon will not be shown on notifications."
+  :type 'boolean
+  :group 'org-clock-reminder)
+
+(defcustom org-clock-reminder-clocking-icon
+  (expand-file-name "icons/clocking.png"
+                    (file-name-directory (or buffer-file-name load-file-name)))
+  "Icon path for clocking notifications."
+  :type 'file
+  :group 'org-clock-reminder)
+
+(defcustom org-clock-reminder-inactivity-icon
+  (expand-file-name "icons/inactivity.png"
+                    (file-name-directory (or buffer-file-name load-file-name)))
+  "Icon path for inactivity notifications."
+  :type 'file
+  :group 'org-clock-reminder)
+
 (defvar org-clock-reminder--timer nil
   "Notification timer object itself.")
 
@@ -89,10 +108,20 @@
               org-clock-heading)
     org-clock-reminder-empty-text))
 
+(defun org-clock-reminder--icon ()
+  "Icon path for current clocking state."
+  (when org-clock-reminder-show-icons
+    (if (org-clocking-p)
+        org-clock-reminder-clocking-icon
+      org-clock-reminder-inactivity-icon)))
+
 (defun org-clock-reminder--notify (message)
   "Sends MESSAGE with given body with `notifications-notify."
-  (notifications-notify :title org-clock-reminder-notification-title
-                        :body message))
+  (let ((icon-path (org-clock-reminder--icon)))
+    (notifications-notify :title org-clock-reminder-notification-title
+                          :body message
+                          :app-icon icon-path)))
+  
 
 (defun org-clock-reminder--timer-function ()
   "This function will be called each timer iteration to prepare and send notification."
