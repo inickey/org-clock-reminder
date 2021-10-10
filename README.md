@@ -76,13 +76,13 @@ You can also change notification title string and body format string.
 
 ```emacs-lisp
 (setq org-clock-reminder-notification-title "Productivity notification"
-      org-clock-reminder-format-string "You working for %s on<br/>%s")
+      org-clock-reminder-format-string "You worked for %s on<br/>%s")
 ```
 
 If you have turned on inactivity notifications, you can also set inactivity notification text.
 
 ```emacs-lisp
-(setq org-clock-reminder-empty-text "There is no currently clocking task. Close all distracting windows and continue working...")
+(setq org-clock-reminder-empty-text "No task is being clocked. Close all distracting windows and continue working...")
 ```
     
 If there's not enought customizations for your task, you can set `org-clock-reminder-format` function.

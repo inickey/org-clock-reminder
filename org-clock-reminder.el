@@ -1,4 +1,4 @@
-;;; org-clock-reminder.el --- Reminds current clocking task or its absence -*- lexical-binding: t; -*-
+;;; org-clock-reminder.el --- Notifications that remind you about clocked-in tasks -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2021 Nikolay Brovko <i@nickey.ru>
 
@@ -62,7 +62,7 @@
   :type 'function
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format-string "You working for %s on<br/>%s"
+(defcustom org-clock-reminder-format-string "You worked for %s on <br/>%s"
   "Notification message format string."
   :type 'string
   :group 'org-clock-reminder)
@@ -73,7 +73,7 @@
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-empty-text
-  "There is no currently clocking task. Close all distracting windows and continue working..."
+  "No task is being clocked. Close all distracting windows and continue working..."
   "Text which will be sent when there's no current clocking task."
   :type 'string
   :group 'org-clock-reminder)
