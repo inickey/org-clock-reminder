@@ -74,9 +74,11 @@ You can turn on inactivity reminds, which are will be send when there's no curre
 
 You can also change notification title string and body format string.
 
+The body format string supports customizable formatters (see `org-clock-reminder-formatters`), by default `%c` is the clocked-in time, and `%h` is the current header.
+
 ```emacs-lisp
 (setq org-clock-reminder-notification-title "Productivity notification"
-      org-clock-reminder-format-string "You worked for %s on<br/>%s")
+      org-clock-reminder-format-string "You worked for %c on<br/>%h")
 ```
 
 If you have turned on inactivity notifications, you can also set inactivity notification text.
@@ -85,17 +87,6 @@ If you have turned on inactivity notifications, you can also set inactivity noti
 (setq org-clock-reminder-empty-text "No task is being clocked. Close all distracting windows and continue working...")
 ```
     
-If there's not enought customizations for your task, you can set `org-clock-reminder-format` function.
-
-```emacs-lisp
-(setq org-clock-reminder-format (lambda ()
-                                  (if (org-clocking-p)
-                                      (format "%s [%s]"
-                                              org-clock-heading
-                                              (org-duration-from-minutes (org-clock-get-clocked-time)))
-                                    "No task selected")))
-```
-
 You can set icons for clocking and inactivity states with the following parameters.
 
 ```emacs-lisp
