@@ -37,6 +37,8 @@
 (require 'notifications)
 (require 'org-clock)
 (require 'org-duration)
+(require 'cl-lib)
+(require 'format-spec)
 
 (defgroup org-clock-reminder nil
   "Don't worry about forgetting current task."
@@ -57,8 +59,20 @@
   :type 'string
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format-string "You worked for %s on <br/>%s"
-  "Notification message format string."
+(defcustom org-clock-reminder-formatters
+  '((?c . (org-duration-from-minutes (org-clock-get-clocked-time)))
+    (?h . org-clock-heading))
+  "Format specifiers for `org-clock-reminder-format-string'."
+  :type '(repeat (cons :tag "Specifier"
+                       (character :tag "Character")
+                       (sexp :tag "Expression")))
+  :group 'org-clock-reminder)
+
+(defcustom org-clock-reminder-format-string "You worked for %c on <br/>%h"
+  "Notification message format string.
+
+Format characters described in `org-clock-reminder-formatters'
+are available for use."
   :type 'string
   :group 'org-clock-reminder)
 
@@ -101,9 +115,14 @@ Functions take two arguments, TITLE and MESSAGE."
 (defun org-clock-reminder-format-message ()
   "Text message for notification body."
   (if (org-clocking-p)
-      (format org-clock-reminder-format-string
-              (org-duration-from-minutes (org-clock-get-clocked-time))
-              org-clock-heading)
+      (let ((format-specifiers
+             (mapcar (lambda (spec)
+                       (cons (car spec) (eval (cdr spec))))
+                     (cl-remove-if-not (lambda (spec)
+                                         (string-match-p (format "%%%c" (car spec))
+                                                         org-clock-reminder-format-string))
+                                       org-clock-reminder-formatters))))
+        (format-spec org-clock-reminder-format-string format-specifiers))
     org-clock-reminder-empty-text))
 
 (defun org-clock-reminder--icon ()
