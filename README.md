@@ -100,6 +100,8 @@ Or if you don't want to see the icons on notifications, you can turn them off.
 (setq org-clock-reminder-show-icons nil)
 ```
 
+Additionally, you can customize how your are notified.  By default the `notifications` library is used, but you may set multiple or alternate notifiers using the hook `org-clock-reminder-notifiers`, with each function taking title and message arguments.
+
 ## Contributions
 
 Feel free to send pull requests, feature requests, bug reports or fixes. Also I'd like to keep this package as simple as it can be.
