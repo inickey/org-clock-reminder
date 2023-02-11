@@ -57,19 +57,9 @@
   :type 'string
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format #'org-clock-reminder--format
-  "Notification message format function."
-  :type 'function
-  :group 'org-clock-reminder)
-
 (defcustom org-clock-reminder-format-string "You worked for %s on <br/>%s"
   "Notification message format string."
   :type 'string
-  :group 'org-clock-reminder)
-
-(defcustom org-clock-reminder-method #'org-clock-reminder--notify
-  "Notification sending function."
-  :type 'function
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-empty-text
@@ -97,10 +87,18 @@
   :type 'file
   :group 'org-clock-reminder)
 
+(defcustom org-clock-reminder-notifiers
+  (list #'org-clock-reminder-notify)
+  "List of functions to call in turn as reminder notifications.
+
+Functions take two arguments, TITLE and MESSAGE."
+  :group 'org-clock-reminder
+  :type 'hook)
+
 (defvar org-clock-reminder--timer nil
   "Notification timer object itself.")
 
-(defun org-clock-reminder--format ()
+(defun org-clock-reminder-format-message ()
   "Text message for notification body."
   (if (org-clocking-p)
       (format org-clock-reminder-format-string
@@ -115,10 +113,10 @@
         org-clock-reminder-clocking-icon
       org-clock-reminder-inactivity-icon)))
 
-(defun org-clock-reminder--notify (message)
-  "Sends MESSAGE with given body with `notifications-notify."
+(defun org-clock-reminder-notify (title message)
+  "Sends MESSAGE with given TITLE with `notifications-notify."
   (let ((icon-path (org-clock-reminder--icon)))
-    (notifications-notify :title org-clock-reminder-notification-title
+    (notifications-notify :title title
                           :body message
                           :app-icon icon-path)))
   
@@ -126,7 +124,9 @@
 (defun org-clock-reminder--timer-function ()
   "This function will be called each timer iteration to prepare and send notification."
   (when (or (org-clocking-p) org-clock-reminder-remind-inactivity)
-    (funcall org-clock-reminder-method (funcall org-clock-reminder-format))))
+    (run-hook-with-args 'org-clock-reminder-notifiers
+                        org-clock-reminder-notification-title
+                        (org-clock-reminder-format-message))))
 
 ;;;###autoload
 (defun org-clock-reminder-activate ()
