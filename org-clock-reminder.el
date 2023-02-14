@@ -118,7 +118,7 @@ Functions take two arguments, TITLE and MESSAGE."
 
 ;; Variables
 
-(defvar org-clock-reminder--timer nil
+(defvar org-clock-reminder-timer nil
   "Notification timer object itself.")
 
 (defvar org-clock-reminder-state :dormant
@@ -186,16 +186,16 @@ Current State     Next State        How?
 (defun org-clock-reminder-activate ()
   "Activate notification timer.  If you change `org-clock-reminder-interval value after activating, you should restart it."
   (interactive)
-  (unless (timerp org-clock-reminder--timer)
-    (setq org-clock-reminder--timer (run-with-timer org-clock-reminder-interval
-                                                    org-clock-reminder-interval
-                                                    #'org-clock-reminder--timer-function))))
+  (unless (timerp org-clock-reminder-timer)
+    (setq org-clock-reminder-timer (run-with-timer org-clock-reminder-interval
+                                                   org-clock-reminder-interval
+                                                   #'org-clock-reminder--timer-function))))
 
 (defun org-clock-reminder-deactivate ()
   "Deactivate notification timer."
   (interactive)
-  (when (timerp org-clock-reminder--timer)
-    (setq org-clock-reminder--timer (cancel-timer org-clock-reminder--timer))))
+  (when (timerp org-clock-reminder-timer)
+    (setq org-clock-reminder-timer (cancel-timer org-clock-reminder-timer))))
 
 (provide 'org-clock-reminder)
 
