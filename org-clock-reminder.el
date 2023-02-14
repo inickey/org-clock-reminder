@@ -144,18 +144,18 @@ Current State     Next State        How?
 
 ;; Utility Functions
 
-(defun org-clock-reminder-format-message ()
-  "Text message for notification body."
-  (if (org-clocking-p)
-      (let ((format-specifiers
-             (mapcar (lambda (spec)
-                       (cons (car spec) (eval (cdr spec))))
-                     (cl-remove-if-not (lambda (spec)
-                                         (string-match-p (format "%%%c" (car spec))
-                                                         org-clock-reminder-format-string))
-                                       org-clock-reminder-formatters))))
-        (format-spec org-clock-reminder-format-string format-specifiers))
-    org-clock-reminder-empty-text))
+(defun org-clock-reminder-format-message (message)
+  "Format MESSAGE using `org-clock-reminder-formatters' for display."
+  (if (not (string-match-p "%" message))
+      message
+    (let ((format-specifiers
+           (mapcar (lambda (spec)
+                     (cons (car spec) (eval (cdr spec))))
+                   (cl-remove-if-not (lambda (spec)
+                                       (string-match-p (format "%%%c" (car spec))
+                                                       message))
+                                     org-clock-reminder-formatters))))
+      (format-spec message format-specifiers))))
 
 (defun org-clock-reminder--icon ()
   "Icon path for current clocking state."
@@ -177,7 +177,9 @@ Current State     Next State        How?
   (when (or (org-clocking-p) org-clock-reminder-remind-inactivity-p)
     (run-hook-with-args 'org-clock-reminder-notifiers
                         org-clock-reminder-notification-title
-                        (org-clock-reminder-format-message))))
+                        (org-clock-reminder-format-message (if (org-clocking-p)
+                                                               org-clock-reminder-format-string
+                                                             org-clock-reminder-empty-text)))))
 
 
 ;; User Entry Points
