@@ -5,7 +5,7 @@
 ;; Author: Nikolay Brovko <i@nickey.ru>
 ;; URL: https://github.com/inickey/org-clock-reminder
 ;; Keywords: calendar, convenience
-;; Version: 0.1
+;; Version: 1.0
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -47,12 +47,12 @@
   "Don't worry about forgetting current task."
   :group 'org-clock)
 
-(defcustom org-clock-reminder-interval 600
-  "Notification interval."
+(defcustom org-clock-reminder-interval 10
+  "Notification interval in minutes."
   :type 'integer
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-remind-inactivity-p nil
+(defcustom org-clock-reminder-inactive-notifications-p nil
   "Should reminders be flagged when inactive?
 
 If t, reminders are shown when there is no clocked-in task; if
@@ -74,17 +74,35 @@ nil, reminders are not shown."
                        (sexp :tag "Expression")))
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format-string "You worked for %c on <br/>%h"
-  "Notification message format string.
+(defcustom org-clock-reminder-active-title "Productivity notification"
+  "Title of notification for `org-clock-reminder' when active (clocked-in).
 
 Format characters described in `org-clock-reminder-formatters'
 are available for use."
   :type 'string
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-empty-text
-  "No task is being clocked. Close all distracting windows and continue working..."
-  "Text which will be sent when there's no current clocking task."
+(defcustom org-clock-reminder-active-text "You worked for %c on <br/>%h"
+  "Notification Body for `org-clock-reminder' when active (clocked-in).
+
+Format characters described in `org-clock-reminder-formatters'
+are available for use."
+  :type 'string
+  :group 'org-clock-reminder)
+
+(defcustom org-clock-reminder-inactive-title "Productivity notification"
+  "Title of notification for `org-clock-reminder' when inactive (clocked-out).
+
+Format characters described in `org-clock-reminder-formatters'
+are available for use."
+  :type 'string
+  :group 'org-clock-reminder)
+
+(defcustom org-clock-reminder-inactive-text "No task is being clocked. Close all distracting windows and continue working..."
+  "Notification Body for `org-clock-reminder' when inactive (clocked-out).
+
+Format characters described in `org-clock-reminder-formatters'
+are available for use."
   :type 'string
   :group 'org-clock-reminder)
 
@@ -134,12 +152,29 @@ Acceptable states are:
 The following transition matrix is used:
 
 Current State     Next State        How?
--------------     --------------    ---------------------------------
-`:dormant'        `:clocked-out'    `org-clock-reminder-activate'
+-------------     --------------    -----------------------------------------
+`:dormant'        `:clocked-out'    Activation of `org-clock-reminder-mode'
 `:clocked-out'    `:clocked-in'     `org-clock-reminder-on-clock-in'
 `:clocked-in'     `:clocked-out'    `org-clock-reminder-on-clock-out'
-`:clocked-out'    `:dormant'        `org-clock-reminder-deactivate'
-`:clocked-in'     `:dormant'        `org-clock-reminder-deactivate'")
+`:clocked-out'    `:dormant'        Deactivation of `org-clock-reminder-mode'
+`:clocked-in'     `:dormant'        Deactivation of `org-clock-reminder-mode'")
+
+
+;; Default Notification Functions
+
+(defun org-clock-reminder--icon ()
+  "Icon path for current clocking state."
+  (when org-clock-reminder-show-icons
+    (if (org-clocking-p)
+        org-clock-reminder-clocking-icon
+      org-clock-reminder-inactivity-icon)))
+
+(defun org-clock-reminder-notify (title message)
+  "Sends MESSAGE with given TITLE with `notifications-notify."
+  (let ((icon-path (org-clock-reminder--icon)))
+    (notifications-notify :title title
+                          :body message
+                          :app-icon icon-path)))
 
 
 ;; Utility Functions
@@ -157,47 +192,85 @@ Current State     Next State        How?
                                      org-clock-reminder-formatters))))
       (format-spec message format-specifiers))))
 
-(defun org-clock-reminder--icon ()
-  "Icon path for current clocking state."
-  (when org-clock-reminder-show-icons
-    (if (org-clocking-p)
-        org-clock-reminder-clocking-icon
-      org-clock-reminder-inactivity-icon)))
+(defun org-clock-reminder-run-notifications (title body)
+  "Run the hook `org-clock-reminder-notifiers' with TITLE and BODY arguments."
+  (run-hook-with-args 'org-clock-reminder-notifiers title body))
 
-(defun org-clock-reminder-notify (title message)
-  "Sends MESSAGE with given TITLE with `notifications-notify."
-  (let ((icon-path (org-clock-reminder--icon)))
-    (notifications-notify :title title
-                          :body message
-                          :app-icon icon-path)))
-  
 
-(defun org-clock-reminder--timer-function ()
-  "This function will be called each timer iteration to prepare and send notification."
-  (when (or (org-clocking-p) org-clock-reminder-remind-inactivity-p)
-    (run-hook-with-args 'org-clock-reminder-notifiers
-                        org-clock-reminder-notification-title
-                        (org-clock-reminder-format-message (if (org-clocking-p)
-                                                               org-clock-reminder-format-string
-                                                             org-clock-reminder-empty-text)))))
+
+;; Basic Implementation
+
+(defun org-clock-reminder-reset-timer ()
+  "Reset `org-clock-reminder-timer'.
+
+Obey various time related settings, including:
+ - `org-clock-reminder-interval'
+ - `org-clock-rounding-minutes'"
+  (interactive)
+  (let ((next-time (* 60 org-clock-reminder-interval))) ;TODO Handle rounding...
+    (when (timerp org-clock-reminder-timer)
+      (cancel-timer org-clock-reminder-timer))
+    (setf org-clock-reminder-timer (run-at-time next-time nil #'org-clock-reminder-on-timer))))
+
+
+(defun org-clock-reminder-on-timer ()
+  "On the `org-clock-reminder-timer', act on `org-clock-reminder-state'.
+
+State           Action
+--------------  -------------------------------
+`:dormant'      Set timer to nil if not already.
+`:clocked-out'  If `org-clock-reminder-remind-inactivity-p',
+                show an \"inactive notification\" and reset timer.
+`:clocked-in'   Show a notification of in-progress status and reset timer."
+  (cl-case org-clock-reminder-state
+    (:dormant
+     (setf org-clock-reminder-timer nil))
+    (:clocked-out
+     (when org-clock-reminder-inactive-notifications-p
+       (org-clock-reminder-run-notifications (org-clock-reminder-format-message org-clock-reminder-inactive-title)
+                                             (org-clock-reminder-format-message org-clock-reminder-inactive-text))))
+    (:clocked-in
+     (org-clock-reminder-run-notifications (org-clock-reminder-format-message org-clock-reminder-active-title)
+                                           (org-clock-reminder-format-message org-clock-reminder-active-text))))
+  (unless (eq org-clock-reminder-state :dormant)
+    (org-clock-reminder-reset-timer)))
+
 
 
 ;; User Entry Points
 
-;;;###autoload
-(defun org-clock-reminder-activate ()
-  "Activate notification timer.  If you change `org-clock-reminder-interval value after activating, you should restart it."
+(defun org-clock-reminder-on-clock-in ()
+  "Change `org-clock-reminder-state' on clock-in."
   (interactive)
-  (unless (timerp org-clock-reminder-timer)
-    (setq org-clock-reminder-timer (run-with-timer org-clock-reminder-interval
-                                                   org-clock-reminder-interval
-                                                   #'org-clock-reminder--timer-function))))
+  (setf org-clock-reminder-state :clocked-in)
+  (org-clock-reminder-reset-timer))
 
-(defun org-clock-reminder-deactivate ()
-  "Deactivate notification timer."
+(defun org-clock-reminder-on-clock-out ()
+  "Change `org-clock-reminder-state' on clock-out."
   (interactive)
-  (when (timerp org-clock-reminder-timer)
-    (setq org-clock-reminder-timer (cancel-timer org-clock-reminder-timer))))
+  (org-clock-reminder-run-notifications (org-clock-reminder-format-message org-clock-reminder-active-title)
+                                        (org-clock-reminder-format-message org-clock-reminder-active-text))
+  (setf org-clock-reminder-state :clocked-out)
+  (org-clock-reminder-reset-timer))
+
+(define-minor-mode org-clock-reminder-mode
+  "Periodically show productivity reminders based on `org-mode' clocking state."
+  :global t
+  :init-value nil
+  :lighter " OCRM"
+  :group 'org-clock
+  (if org-clock-reminder-mode
+      (progn
+        (setf org-clock-reminder-state :clocked-out)
+        (add-hook 'org-clock-in-hook #'org-clock-reminder-on-clock-in)
+        (add-hook 'org-clock-out-hook #'org-clock-reminder-on-clock-out)
+        (org-clock-reminder-reset-timer))
+    (setf org-clock-reminder-state :dormant)
+    (remove-hook 'org-clock-in-hook #'org-clock-reminder-on-clock-in)
+    (remove-hook 'org-clock-out-hook #'org-clock-reminder-on-clock-out)
+    (when (timerp org-clock-reminder-timer)
+      (cancel-timer org-clock-reminder-timer))
+    (setf org-clock-reminder-timer nil)))
 
 (provide 'org-clock-reminder)
 
