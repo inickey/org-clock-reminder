@@ -49,8 +49,11 @@
   :type 'integer
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-remind-inactivity nil
-  "Inactivity reminds are sent when there's no current clocking task.  If you don't want to send this type of notifications, change value to nil."
+(defcustom org-clock-reminder-remind-inactivity-p nil
+  "Should reminders be flagged when inactive?
+
+If t, reminders are shown when there is no clocked-in task; if
+nil, reminders are not shown."
   :type 'boolean
   :group 'org-clock-reminder)
 
@@ -142,7 +145,7 @@ Functions take two arguments, TITLE and MESSAGE."
 
 (defun org-clock-reminder--timer-function ()
   "This function will be called each timer iteration to prepare and send notification."
-  (when (or (org-clocking-p) org-clock-reminder-remind-inactivity)
+  (when (or (org-clocking-p) org-clock-reminder-remind-inactivity-p)
     (run-hook-with-args 'org-clock-reminder-notifiers
                         org-clock-reminder-notification-title
                         (org-clock-reminder-format-message))))
