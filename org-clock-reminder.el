@@ -48,8 +48,19 @@
   :group 'org-clock)
 
 (defcustom org-clock-reminder-interval 10
-  "Notification interval in minutes."
-  :type 'number
+  "How frequently reminder should be triggered.
+
+This may be one of two types:
+
+ - A number, which is used for both active (clocked-in) and
+   inactive (clocked-out) reminders.
+ - A pair of numbers, (active . inactive), where active is used
+   for active reminders and inactive is used for inactive
+   reminders."
+  :type `(choice (number :tag "Active and Inactive")
+                 (cons :tag "Separate times for Active and Inactive"
+                       (number :tag "Active" :value 10)
+                       (number :tag "Inactive" :value 10 )))
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-inactive-notifications-p nil
@@ -207,8 +218,13 @@ Obey various time related settings, including:
  - `org-clock-reminder-interval'
  - `org-clock-rounding-minutes'"
   (interactive)
-  (let* ((reminder-interval (or reminder-interval org-clock-reminder-interval))
-         (next-time (* 60 reminder-interval))) ;TODO Handle rounding...
+  (let* ((reminder-interval (let ((obj (or reminder-interval org-clock-reminder-interval)))
+                              (if (numberp obj)
+                                  obj
+                                (if (equal org-clock-reminder-state :clocked-in)
+                                    (car obj)
+                                  (cdr obj)))))
+         (next-time (* 60 reminder-interval)))
     (when (timerp org-clock-reminder-timer)
       (cancel-timer org-clock-reminder-timer))
     (setf org-clock-reminder-timer (run-at-time next-time nil #'org-clock-reminder-on-timer))))
