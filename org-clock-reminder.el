@@ -213,6 +213,11 @@ Obey various time related settings, including:
       (cancel-timer org-clock-reminder-timer))
     (setf org-clock-reminder-timer (run-at-time next-time nil #'org-clock-reminder-on-timer))))
 
+(defun org-clock-reminder-variable-watcher (symbol new-value op _where)
+  "Watcher function for SYMBOL, when changed to NEW-VALUE with OP."
+  (when (equal op 'set)
+    (message "%s is now %s." symbol new-value)
+    (org-clock-reminder-reset-timer new-value)))
 
 (defun org-clock-reminder-on-timer ()
   "On the `org-clock-reminder-timer', act on `org-clock-reminder-state'.
@@ -265,10 +270,12 @@ State           Action
         (setf org-clock-reminder-state :clocked-out)
         (add-hook 'org-clock-in-hook #'org-clock-reminder-on-clock-in)
         (add-hook 'org-clock-out-hook #'org-clock-reminder-on-clock-out)
+        (add-variable-watcher 'org-clock-reminder-interval #'org-clock-reminder-variable-watcher)
         (org-clock-reminder-reset-timer))
     (setf org-clock-reminder-state :dormant)
     (remove-hook 'org-clock-in-hook #'org-clock-reminder-on-clock-in)
     (remove-hook 'org-clock-out-hook #'org-clock-reminder-on-clock-out)
+    (remove-variable-watcher 'org-clock-reminder-interval #'org-clock-reminder-variable-watcher)
     (when (timerp org-clock-reminder-timer)
       (cancel-timer org-clock-reminder-timer))
     (setf org-clock-reminder-timer nil)))
