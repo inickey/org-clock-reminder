@@ -40,6 +40,9 @@
 (require 'cl-lib)
 (require 'format-spec)
 
+
+;; Configuration
+
 (defgroup org-clock-reminder nil
   "Don't worry about forgetting current task."
   :group 'org-clock)
@@ -112,8 +115,14 @@ Functions take two arguments, TITLE and MESSAGE."
   :group 'org-clock-reminder
   :type 'hook)
 
+
+;; Variables
+
 (defvar org-clock-reminder--timer nil
   "Notification timer object itself.")
+
+
+;; Utility Functions
 
 (defun org-clock-reminder-format-message ()
   "Text message for notification body."
@@ -149,6 +158,9 @@ Functions take two arguments, TITLE and MESSAGE."
     (run-hook-with-args 'org-clock-reminder-notifiers
                         org-clock-reminder-notification-title
                         (org-clock-reminder-format-message))))
+
+
+;; User Entry Points
 
 ;;;###autoload
 (defun org-clock-reminder-activate ()
