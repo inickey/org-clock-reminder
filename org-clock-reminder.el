@@ -37,6 +37,8 @@
 (require 'notifications)
 (require 'org-clock)
 (require 'org-duration)
+(require 'cl-lib)
+(require 'format-spec)
 
 (defgroup org-clock-reminder nil
   "Don't worry about forgetting current task."
@@ -57,19 +59,21 @@
   :type 'string
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format #'org-clock-reminder--format
-  "Notification message format function."
-  :type 'function
+(defcustom org-clock-reminder-formatters
+  '((?c . (org-duration-from-minutes (org-clock-get-clocked-time)))
+    (?h . org-clock-heading))
+  "Format specifiers for `org-clock-reminder-format-string'."
+  :type '(repeat (cons :tag "Specifier"
+                       (character :tag "Character")
+                       (sexp :tag "Expression")))
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-format-string "You worked for %s on <br/>%s"
-  "Notification message format string."
+(defcustom org-clock-reminder-format-string "You worked for %c on <br/>%h"
+  "Notification message format string.
+
+Format characters described in `org-clock-reminder-formatters'
+are available for use."
   :type 'string
-  :group 'org-clock-reminder)
-
-(defcustom org-clock-reminder-method #'org-clock-reminder--notify
-  "Notification sending function."
-  :type 'function
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-empty-text
@@ -97,15 +101,28 @@
   :type 'file
   :group 'org-clock-reminder)
 
+(defcustom org-clock-reminder-notifiers
+  (list #'org-clock-reminder-notify)
+  "List of functions to call in turn as reminder notifications.
+
+Functions take two arguments, TITLE and MESSAGE."
+  :group 'org-clock-reminder
+  :type 'hook)
+
 (defvar org-clock-reminder--timer nil
   "Notification timer object itself.")
 
-(defun org-clock-reminder--format ()
+(defun org-clock-reminder-format-message ()
   "Text message for notification body."
   (if (org-clocking-p)
-      (format org-clock-reminder-format-string
-              (org-duration-from-minutes (org-clock-get-clocked-time))
-              org-clock-heading)
+      (let ((format-specifiers
+             (mapcar (lambda (spec)
+                       (cons (car spec) (eval (cdr spec))))
+                     (cl-remove-if-not (lambda (spec)
+                                         (string-match-p (format "%%%c" (car spec))
+                                                         org-clock-reminder-format-string))
+                                       org-clock-reminder-formatters))))
+        (format-spec org-clock-reminder-format-string format-specifiers))
     org-clock-reminder-empty-text))
 
 (defun org-clock-reminder--icon ()
@@ -115,10 +132,10 @@
         org-clock-reminder-clocking-icon
       org-clock-reminder-inactivity-icon)))
 
-(defun org-clock-reminder--notify (message)
-  "Sends MESSAGE with given body with `notifications-notify."
+(defun org-clock-reminder-notify (title message)
+  "Sends MESSAGE with given TITLE with `notifications-notify."
   (let ((icon-path (org-clock-reminder--icon)))
-    (notifications-notify :title org-clock-reminder-notification-title
+    (notifications-notify :title title
                           :body message
                           :app-icon icon-path)))
   
@@ -126,7 +143,9 @@
 (defun org-clock-reminder--timer-function ()
   "This function will be called each timer iteration to prepare and send notification."
   (when (or (org-clocking-p) org-clock-reminder-remind-inactivity)
-    (funcall org-clock-reminder-method (funcall org-clock-reminder-format))))
+    (run-hook-with-args 'org-clock-reminder-notifiers
+                        org-clock-reminder-notification-title
+                        (org-clock-reminder-format-message))))
 
 ;;;###autoload
 (defun org-clock-reminder-activate ()
