@@ -49,7 +49,7 @@
 
 (defcustom org-clock-reminder-interval 10
   "Notification interval in minutes."
-  :type 'integer
+  :type 'number
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-inactive-notifications-p nil
