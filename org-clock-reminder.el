@@ -121,6 +121,26 @@ Functions take two arguments, TITLE and MESSAGE."
 (defvar org-clock-reminder--timer nil
   "Notification timer object itself.")
 
+(defvar org-clock-reminder-state :dormant
+  "Current state of the `org-clock-reminder' state machine.
+
+In general, this should not be modified manually.
+
+Acceptable states are:
+`:dormant'
+`:clocked-out'
+`:clocked-in'
+
+The following transition matrix is used:
+
+Current State     Next State        How?
+-------------     --------------    ---------------------------------
+`:dormant'        `:clocked-out'    `org-clock-reminder-activate'
+`:clocked-out'    `:clocked-in'     `org-clock-reminder-on-clock-in'
+`:clocked-in'     `:clocked-out'    `org-clock-reminder-on-clock-out'
+`:clocked-out'    `:dormant'        `org-clock-reminder-deactivate'
+`:clocked-in'     `:dormant'        `org-clock-reminder-deactivate'")
+
 
 ;; Utility Functions
 
