@@ -68,7 +68,7 @@ nil, reminders are not shown."
 (defcustom org-clock-reminder-formatters
   '((?c . (org-duration-from-minutes (org-clock-get-clocked-time)))
     (?h . org-clock-heading))
-  "Format specifiers for `org-clock-reminder-format-string'."
+  "Format specifiers for `org-clock-reminder-format-message'."
   :type '(repeat (cons :tag "Specifier"
                        (character :tag "Character")
                        (sexp :tag "Expression")))
