@@ -200,14 +200,15 @@ Current State     Next State        How?
 
 ;; Basic Implementation
 
-(defun org-clock-reminder-reset-timer ()
-  "Reset `org-clock-reminder-timer'.
+(cl-defun org-clock-reminder-reset-timer (&optional reminder-interval)
+  "Reset `org-clock-reminder-timer' given optional REMINDER-INTERVAL.
 
 Obey various time related settings, including:
  - `org-clock-reminder-interval'
  - `org-clock-rounding-minutes'"
   (interactive)
-  (let ((next-time (* 60 org-clock-reminder-interval))) ;TODO Handle rounding...
+  (let* ((reminder-interval (or reminder-interval org-clock-reminder-interval))
+         (next-time (* 60 reminder-interval))) ;TODO Handle rounding...
     (when (timerp org-clock-reminder-timer)
       (cancel-timer org-clock-reminder-timer))
     (setf org-clock-reminder-timer (run-at-time next-time nil #'org-clock-reminder-on-timer))))
