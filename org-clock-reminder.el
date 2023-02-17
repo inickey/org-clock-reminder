@@ -112,23 +112,16 @@ are available for use."
   :type 'string
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-show-icons t
-  "If value is nil, icon will not be shown on notifications."
-  :type 'boolean
-  :group 'org-clock-reminder)
+(defcustom org-clock-reminder-icons (cons (expand-file-name "icons/clocking.png"
+                                                            (file-name-directory (or buffer-file-name load-file-name)))
+                                          (expand-file-name "icons/inactivity.png"
+                                                            (file-name-directory (or buffer-file-name load-file-name))))
+  "Paths for clocking icons.  Car is path to active icon, cdr path to inactive.
 
-(defcustom org-clock-reminder-clocking-icon
-  (expand-file-name "icons/clocking.png"
-                    (file-name-directory (or buffer-file-name load-file-name)))
-  "Icon path for clocking notifications."
-  :type 'file
-  :group 'org-clock-reminder)
-
-(defcustom org-clock-reminder-inactivity-icon
-  (expand-file-name "icons/inactivity.png"
-                    (file-name-directory (or buffer-file-name load-file-name)))
-  "Icon path for inactivity notifications."
-  :type 'file
+Note: if nil, no icons will be shown."
+  :type '(choice (cons (file :tag "Active Icon")
+                       (file :tag "Inactive Icon"))
+                 (constant :tag "Don't show Icons" nil))
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-notifiers
@@ -170,10 +163,10 @@ Current State     Next State        How?
 
 (defun org-clock-reminder--icon ()
   "Icon path for current clocking state."
-  (when org-clock-reminder-show-icons
-    (if (org-clocking-p)
-        org-clock-reminder-clocking-icon
-      org-clock-reminder-inactivity-icon)))
+  (when org-clock-reminder-icons
+    (if (equal org-clock-reminder-state :clocked-in)
+        (car org-clock-reminder-icons)
+      (cdr org-clock-reminder-icons))))
 
 (defun org-clock-reminder-notify (title message)
   "Sends MESSAGE with given TITLE with `notifications-notify."
