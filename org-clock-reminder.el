@@ -71,11 +71,6 @@ nil, reminders are not shown."
   :type 'boolean
   :group 'org-clock-reminder)
 
-(defcustom org-clock-reminder-notification-title "Productivity notification"
-  "Notification title."
-  :type 'string
-  :group 'org-clock-reminder)
-
 (defcustom org-clock-reminder-formatters
   '((?c . (org-duration-from-minutes (org-clock-get-clocked-time)))
     (?h . org-clock-heading))
