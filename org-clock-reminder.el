@@ -67,8 +67,10 @@ This may be one of two types:
   "Should reminders be flagged when inactive?
 
 If t, reminders are shown when there is no clocked-in task; if
-nil, reminders are not shown."
-  :type 'boolean
+nil, reminders are not shown.  Additionally, a zero-argument
+function may be provided to decide given current time."
+  :type '(choice boolean
+                 function)
   :group 'org-clock-reminder)
 
 (defcustom org-clock-reminder-formatters
@@ -223,6 +225,12 @@ Obey various time related settings, including:
     (message "%s is now %s." symbol new-value)
     (org-clock-reminder-reset-timer new-value)))
 
+(defun org-clock-reminder--show-inactive-notifications-p ()
+  "Should inactive notifications be shown?"
+  (if (functionp org-clock-reminder-inactive-notifications-p)
+      (funcall org-clock-reminder-inactive-notifications-p)
+    org-clock-reminder-inactive-notifications-p))
+
 (defun org-clock-reminder-on-timer ()
   "On the `org-clock-reminder-timer', act on `org-clock-reminder-state'.
 
@@ -236,7 +244,7 @@ State           Action
     (:dormant
      (setf org-clock-reminder-timer nil))
     (:clocked-out
-     (when org-clock-reminder-inactive-notifications-p
+     (when (org-clock-reminder--show-inactive-notifications-p)
        (org-clock-reminder-run-notifications (org-clock-reminder-format-message org-clock-reminder-inactive-title)
                                              (org-clock-reminder-format-message org-clock-reminder-inactive-text))))
     (:clocked-in
